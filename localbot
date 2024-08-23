@@ -1,0 +1,68 @@
+import streamlit as st
+import pandas as pd
+import os
+from docx import Document
+
+# Load the Excel sheet
+excel_path = 'C:\\Users\\Tharushi\\OneDrive\\Desktop\\chatbot\\Use Case.xlsx'
+df = pd.read_excel(excel_path)
+
+# Function to open the document and read its content
+def open_document(doc_number):
+    doc_path = f'C:\\Users\\Tharushi\\OneDrive\\Desktop\\chatbot\\doc_001.docx'  # Change to your document path
+    if os.path.exists(doc_path):
+        doc = Document(doc_path)
+        content = '\n'.join([para.text for para in doc.paragraphs])
+        return content
+    else:
+        return "Document not found."
+
+# Function to summarize the document content based on the use case
+def summarize_content(content, use_case):
+    lines = content.split('\n')
+    summary = []
+    capture = False
+    for line in lines:
+        if use_case.lower() in line.lower():
+            capture = True
+        if capture:
+            summary.append(line)
+            if line.strip() == "":  # Stop capturing after a blank line
+                break
+    return '\n'.join(summary) if summary else "Relevant content not found in the document."
+
+# Function to find the answer in the summarized content
+def find_answer(content, keyword):
+    lines = content.split('\n')
+    for i, line in enumerate(lines):
+        if keyword.lower() in line.lower():
+            # Return the line with the keyword and the next three lines
+            return '\n'.join(lines[i:i+4])
+    return "Keyword not found in the document."
+
+# Streamlit interface
+def main():
+    st.title("Use Case Document Viewer")
+    
+    use_case = st.text_input("Enter the use case:")
+    
+    if use_case:
+        row = df[df['Use Case'] == use_case]
+        
+        if not row.empty:
+            doc_number = row.iloc[0]['Document Number']
+            content = open_document(doc_number)
+            st.text_area("Document Content", content, height=300)
+            
+            summary = summarize_content(content, use_case)
+            st.write("Summary:", summary)
+            
+            keyword = st.text_input("Enter your question keyword:").lower()
+            if keyword:
+                answer = find_answer(summary, keyword)
+                st.write("Answer:", answer)
+        else:
+            st.write("Use case not found.")
+
+if __name__ == "__main__":
+    main()
